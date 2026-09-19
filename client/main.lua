@@ -310,12 +310,12 @@ local function createBind(key, command)
 
     if not keyOk then
         printError(keyError)
-        return false
+        return false, keyError
     end
 
     if not command then
         printError('Invalid command.')
-        return false
+        return false, 'Debes indicar un comando.'
     end
 
     local existing = findBindByKey(key)
@@ -326,17 +326,23 @@ local function createBind(key, command)
             existing.command
         ))
 
+        local errorMessage = ('La tecla %s ya está asignada a /%s.'):format(
+            key,
+            existing.command
+        )
+
         printInfo(('Use /%s %s first.'):format(
             Config.UnbindCommand or 'desbindear',
             key
         ))
 
-        return false
+        return false, errorMessage
     end
 
     if getBindCount() >= (Config.MaxBinds or 50) then
+        local errorMessage = ('Has alcanzado el máximo de %s binds.'):format(Config.MaxBinds or 50)
         printError(('Maximum of %s binds reached.'):format(Config.MaxBinds or 50))
-        return false
+        return false, errorMessage
     end
 
     local id = nextId
@@ -468,12 +474,20 @@ RegisterCommand(Config.ListCommand or 'binds', function()
     listBinds()
 end, false)
 
-RegisterCommand(Config.MenuCommand or 'bindmenu', function()
+local function toggleMenu()
     if menuOpen then
         closeMenu()
     else
         openMenu()
     end
+end
+
+RegisterCommand(Config.MenuCommand or 'bindmenu', function()
+    toggleMenu()
+end, false)
+
+RegisterCommand('pvkb_openmenu', function()
+    toggleMenu()
 end, false)
 
 RegisterKeyMapping(
@@ -500,7 +514,7 @@ RegisterNUICallback('createBind', function(data, cb)
     local command = data and data.command
 
     local beforeCount = getBindCount()
-    local success = createBind(key, command)
+    local success, errorMessage = createBind(key, command)
 
     if success then
         cb({
@@ -515,7 +529,7 @@ RegisterNUICallback('createBind', function(data, cb)
         ok = false,
         binds = getBindRows(),
         maxBinds = Config.MaxBinds or 50,
-        error = ('No se pudo crear el bind. Revisa la consola para el motivo.'),
+        error = errorMessage or 'No se pudo crear el bind.',
         count = beforeCount
     })
 end)
