@@ -8,9 +8,9 @@ local menuOpen = false
 local currentLanguage = nil
 
 local LANG = {
-    es = { invalidKey='La tecla %s no es válida.', unsupportedKey='La tecla %s no es compatible.', blacklistedKey='La tecla %s está prohibida.', invalidCommand='El comando no es válido.', commandRequired='Debes indicar el comando que quieres ejecutar.', alreadyBound='La tecla %s ya está asignada a /%s.', useUnbind='Usa /%s %s primero.', maxBinds='Has alcanzado el máximo de %s binds.', bound='Bind creado: %s → /%s', removed='Bind eliminado: %s → /%s', noBind='No existe ningún bind para %s.', noBinds='No tienes binds configurados.', usageBind='Uso: /%s [tecla] [comando]', example1='Ejemplo: /%s F9 e dance', example2='Ejemplo: /%s X /e dance', usageUnbind='Uso: /%s [tecla]', edited='Bind actualizado: %s → /%s', languageChanged='Idioma cambiado a %s.' },
-    en = { invalidKey='The key %s is not valid.', unsupportedKey='The key %s is not supported.', blacklistedKey='The key %s is blocked.', invalidCommand='The command is not valid.', commandRequired='You must enter a command.', alreadyBound='The key %s is already bound to /%s.', useUnbind='Use /%s %s first.', maxBinds='You have reached the %s bind limit.', bound='Bind created: %s → /%s', removed='Bind removed: %s → /%s', noBind='No bind exists for %s.', noBinds='You have no configured binds.', usageBind='Usage: /%s [key] [command]', example1='Example: /%s F9 e dance', example2='Example: /%s X /e dance', usageUnbind='Usage: /%s [key]', edited='Bind updated: %s → /%s', languageChanged='Language changed to %s.' },
-    pt = { invalidKey='A tecla %s não é válida.', unsupportedKey='A tecla %s não é compatível.', blacklistedKey='A tecla %s está bloqueada.', invalidCommand='O comando não é válido.', commandRequired='Você precisa informar um comando.', alreadyBound='A tecla %s já está vinculada a /%s.', useUnbind='Use /%s %s primeiro.', maxBinds='Você atingiu o limite de %s binds.', bound='Bind criado: %s → /%s', removed='Bind removido: %s → /%s', noBind='Não existe bind para %s.', noBinds='Você não possui binds configurados.', usageBind='Uso: /%s [tecla] [comando]', example1='Exemplo: /%s F9 e dance', example2='Exemplo: /%s X /e dance', usageUnbind='Uso: /%s [tecla]', edited='Bind atualizado: %s → /%s', languageChanged='Idioma alterado para %s.' }
+    es = { invalidKey='La tecla %s no es válida.', unsupportedKey='La tecla %s no es compatible.', blacklistedKey='La tecla %s está prohibida.', invalidCommand='El comando no es válido.', commandRequired='Debes indicar el comando que quieres ejecutar.', alreadyBound='La tecla %s ya está asignada a /%s.', useUnbind='Usa /%s %s primero.', maxBinds='Has alcanzado el máximo de %s binds.', bound='Bind creado: %s → /%s', removed='Bind eliminado: %s → /%s', noBind='No existe ningún bind para %s.', noBinds='No tienes binds configurados.', usageBind='Uso: /%s [tecla] [comando]', example1='Ejemplo: /%s F9 e dance', example2='Ejemplo: /%s X /e dance', usageUnbind='Uso: /%s [tecla]', edited='Bind actualizado: %s → /%s', languageChanged='Idioma cambiado a %s.', bindNotFound='Ese bind ya no existe.', createFailed='No se pudo crear el bind.', deleteFailed='No se pudo eliminar el bind.', keyAssigned='La tecla %s ya está asignada.', invalidLanguage='Idioma no válido.' },
+    en = { invalidKey='The key %s is not valid.', unsupportedKey='The key %s is not supported.', blacklistedKey='The key %s is blocked.', invalidCommand='The command is not valid.', commandRequired='You must enter a command.', alreadyBound='The key %s is already bound to /%s.', useUnbind='Use /%s %s first.', maxBinds='You have reached the %s bind limit.', bound='Bind created: %s → /%s', removed='Bind removed: %s → /%s', noBind='No bind exists for %s.', noBinds='You have no configured binds.', usageBind='Usage: /%s [key] [command]', example1='Example: /%s F9 e dance', example2='Example: /%s X /e dance', usageUnbind='Usage: /%s [key]', edited='Bind updated: %s → /%s', languageChanged='Language changed to %s.', bindNotFound='That bind no longer exists.', createFailed='Could not create the bind.', deleteFailed='Could not delete the bind.', keyAssigned='The key %s is already assigned.', invalidLanguage='Invalid language.' },
+    pt = { invalidKey='A tecla %s não é válida.', unsupportedKey='A tecla %s não é compatível.', blacklistedKey='A tecla %s está bloqueada.', invalidCommand='O comando não é válido.', commandRequired='Você precisa informar um comando.', alreadyBound='A tecla %s já está vinculada a /%s.', useUnbind='Use /%s %s primeiro.', maxBinds='Você atingiu o limite de %s binds.', bound='Bind criado: %s → /%s', removed='Bind removido: %s → /%s', noBind='Não existe bind para %s.', noBinds='Você não possui binds configurados.', usageBind='Uso: /%s [tecla] [comando]', example1='Exemplo: /%s F9 e dance', example2='Exemplo: /%s X /e dance', usageUnbind='Uso: /%s [tecla]', edited='Bind atualizado: %s → /%s', languageChanged='Idioma alterado para %s.', bindNotFound='Esse bind não existe mais.', createFailed='Não foi possível criar o bind.', deleteFailed='Não foi possível excluir o bind.', keyAssigned='A tecla %s já está atribuída.', invalidLanguage='Idioma inválido.' }
 }
 local LANGUAGE_NAMES = { es='Español', en='English', pt='Português' }
 
@@ -26,11 +26,9 @@ local function detectSystemLanguage()
         if languageId == 4 or languageId == 11 then
             return 'es'
         end
-
         if languageId == 5 then
             return 'pt'
         end
-
         if languageId == 0 then
             return 'en'
         end
@@ -54,26 +52,15 @@ local function tr(key, ...)
     return select('#', ...) > 0 and value:format(...) or value
 end
 
-
 local function getBindRows()
     local rows = {}
-
     for _, bind in pairs(binds) do
-        rows[#rows + 1] = {
-            id = bind.id,
-            key = bind.key,
-            command = bind.command
-        }
+        rows[#rows + 1] = { id = bind.id, key = bind.key, command = bind.command }
     end
-
     table.sort(rows, function(a, b)
-        if a.key == b.key then
-            return a.id < b.id
-        end
-
+        if a.key == b.key then return a.id < b.id end
         return a.key < b.key
     end)
-
     return rows
 end
 
@@ -100,173 +87,90 @@ local VALID_KEYS = {
     BACKSLASH = true, OEM_6 = true, RBRACKET = true,
     APOSTROPHE = true, OEM_7 = true, OEM_102 = true
 }
-
 for i = 0, 9 do VALID_KEYS[tostring(i)] = true end
 for i = string.byte('A'), string.byte('Z') do VALID_KEYS[string.char(i)] = true end
 for i = 1, 24 do VALID_KEYS['F' .. i] = true end
 
 local KEY_ALIASES = {
-    ESC = 'ESCAPE',
-    ENTER = 'RETURN',
-    CTRL = 'LCONTROL',
-    LCTRL = 'LCONTROL',
-    RCTRL = 'RCONTROL',
-    ALT = 'LMENU',
-    LALT = 'LMENU',
-    RALT = 'RMENU',
-    CAPSLOCK = 'CAPITAL',
-    BACKSPACE = 'BACK',
-    TILDE = 'GRAVE'
+    ESC = 'ESCAPE', ENTER = 'RETURN', CTRL = 'LCONTROL', LCTRL = 'LCONTROL',
+    RCTRL = 'RCONTROL', ALT = 'LMENU', LALT = 'LMENU', RALT = 'RMENU',
+    CAPSLOCK = 'CAPITAL', BACKSPACE = 'BACK', TILDE = 'GRAVE'
 }
 
 local function debugPrint(message)
-    if Config.Debug then
-        print(('[%s] %s'):format(RESOURCE, message))
-    end
+    if Config.Debug then print(('[%s] %s'):format(RESOURCE, message)) end
 end
 
 local function normalizeKey(key)
     if type(key) ~= 'string' then return nil end
-
     key = key:upper():gsub('^%s+', ''):gsub('%s+$', '')
-
     if key == '' then return nil end
-
     return KEY_ALIASES[key] or key
 end
 
 local function isValidKey(key)
     key = normalizeKey(key)
-
-    if not key then
-        return false, tr('invalidKey', '?')
-    end
-
-    if not VALID_KEYS[key] then
-        return false, tr('unsupportedKey', key)
-    end
-
-    if Config.Blacklist and Config.Blacklist[key] then
-        return false, tr('blacklistedKey', key)
-    end
-
+    if not key then return false, tr('invalidKey', '?') end
+    if not VALID_KEYS[key] then return false, tr('unsupportedKey', key) end
+    if Config.Blacklist and Config.Blacklist[key] then return false, tr('blacklistedKey', key) end
     return true
 end
 
 local function normalizeCommand(command)
     if type(command) ~= 'string' then return nil end
-
     command = command:gsub('^%s+', ''):gsub('%s+$', '')
     command = command:gsub('^/', '')
-
     if command == '' then return nil end
-
     return command
 end
 
-local function storageKey(id)
-    return PREFIX .. tostring(id)
-end
-
-local function indexKey()
-    return PREFIX .. 'index'
-end
-
-local function saveIndex()
-    SetResourceKvp(indexKey(), json.encode({ nextId = nextId }))
-end
-
+local function storageKey(id) return PREFIX .. tostring(id) end
+local function indexKey() return PREFIX .. 'index' end
+local function saveIndex() SetResourceKvp(indexKey(), json.encode({ nextId = nextId })) end
 local function saveBind(bind)
-    SetResourceKvp(storageKey(bind.id), json.encode({
-        id = bind.id,
-        key = bind.key,
-        command = bind.command
-    }))
+    SetResourceKvp(storageKey(bind.id), json.encode({ id = bind.id, key = bind.key, command = bind.command }))
 end
-
-local function deleteBindStorage(id)
-    DeleteResourceKvp(storageKey(id))
-end
-
-
-local function createCommandName(id)
-    return ('pvkb_%s'):format(id)
-end
+local function deleteBindStorage(id) DeleteResourceKvp(storageKey(id)) end
+local function createCommandName(id) return ('pvkb_%s'):format(id) end
 
 local function executeBoundCommand(bind)
     if not bind or not bind.command then return end
-
     local command = normalizeCommand(bind.command)
-
-    if command then
-        ExecuteCommand(command)
-    end
+    if command then ExecuteCommand(command) end
 end
 
 local function registerBind(bind)
     local commandName = createCommandName(bind.id)
-
     RegisterCommand(commandName, function()
-        -- RegisterKeyMapping has no resource-side unregister API.
-        -- The mapping can remain registered, but it must become inert
-        -- immediately after /desbindear removes the bind from memory.
-        if binds[bind.id] ~= bind then
-            return
-        end
-
+        if binds[bind.id] ~= bind then return end
         executeBoundCommand(bind)
     end, false)
-
-    RegisterKeyMapping(
-        commandName,
-        ('PV Bind: %s'):format(bind.command),
-        'keyboard',
-        bind.key:lower()
-    )
-
-    debugPrint(('registered #%s [%s] -> /%s'):format(
-        bind.id,
-        bind.key,
-        bind.command
-    ))
+    RegisterKeyMapping(commandName, ('PV Bind: %s'):format(bind.command), 'keyboard', bind.key:lower())
+    debugPrint(('registered #%s [%s] -> /%s'):format(bind.id, bind.key, bind.command))
 end
 
 local function loadBinds()
     local indexData = GetResourceKvpString(indexKey())
-
     if indexData then
         local ok, data = pcall(json.decode, indexData)
-
-        if ok and type(data) == 'table' then
-            nextId = tonumber(data.nextId) or 1
-        end
+        if ok and type(data) == 'table' then nextId = tonumber(data.nextId) or 1 end
     end
-
     local maxScan = math.max((Config.MaxBinds or 50) * 2, nextId)
-
     for id = 1, maxScan do
         local raw = GetResourceKvpString(storageKey(id))
-
         if raw then
             local ok, bind = pcall(json.decode, raw)
-
             if ok and type(bind) == 'table' then
                 bind.id = tonumber(bind.id)
                 bind.key = normalizeKey(bind.key)
                 bind.command = normalizeCommand(bind.command)
-
                 local valid = bind.id and bind.key and bind.command
                 local keyOk = valid and isValidKey(bind.key)
-
                 if valid and keyOk and not usedKeys[bind.key] then
                     binds[bind.id] = bind
                     usedKeys[bind.key] = bind.id
-
                     registerBind(bind)
-
-                    if bind.id >= nextId then
-                        nextId = bind.id + 1
-                    end
+                    if bind.id >= nextId then nextId = bind.id + 1 end
                 elseif not valid or not keyOk then
                     deleteBindStorage(id)
                 end
@@ -275,231 +179,149 @@ local function loadBinds()
             end
         end
     end
-
     saveIndex()
 end
 
 local function getBindCount()
     local count = 0
-
-    for _ in pairs(binds) do
-        count = count + 1
-    end
-
+    for _ in pairs(binds) do count = count + 1 end
     return count
 end
 
 local function findBindByKey(key)
     key = normalizeKey(key)
-
     if not key then return nil end
-
     local id = usedKeys[key]
-
     return id and binds[id] or nil
 end
 
 local function notify(message)
     if not message or message == '' then return end
-
-    -- FiveM color codes are useful for console output but should not be
-    -- passed to the HUD feed as literal text. Convert them to a small
-    -- HTML-like visual style using native color tags only where supported.
-    -- For the feed, strip all ^ color codes first.
     message = message:gsub('%^%d', '')
     message = message:gsub('%^r', '')
     message = message:gsub('%^R', '')
     message = message:gsub('%^s', '')
     message = message:gsub('%^S', '')
-
     BeginTextCommandThefeedPost('STRING')
     AddTextComponentSubstringPlayerName(message)
     EndTextCommandThefeedPostTicker(false, true)
 end
 
-local function notifyError(message)
-    notify(('~r~PV Keybinder~s~: %s'):format(message))
-end
-
-local function notifySuccess(message)
-    notify(('~g~PV Keybinder~s~: %s'):format(message))
-end
-
-local function notifyInfo(message)
-    notify(('~b~PV Keybinder~s~: %s'):format(message))
-end
+local function notifyError(message) notify(('~r~PV Keybinder~s~: %s'):format(message)) end
+local function notifySuccess(message) notify(('~g~PV Keybinder~s~: %s'):format(message)) end
+local function notifyInfo(message) notify(('~b~PV Keybinder~s~: %s'):format(message)) end
 
 local function openMenu()
     menuOpen = true
     SetNuiFocus(true, true)
-
-    SendNUIMessage({
-        action = 'open',
-        binds = getBindRows(),
-        maxBinds = Config.MaxBinds or 50,
-        language = currentLanguage or resolveLanguage()
-    })
+    SendNUIMessage({ action = 'open', binds = getBindRows(), maxBinds = Config.MaxBinds or 50, language = currentLanguage or resolveLanguage() })
 end
 
 local function closeMenu()
     menuOpen = false
     currentLanguage = resolveLanguage()
     SetNuiFocus(false, false)
-
-    SendNUIMessage({
-        action = 'close'
-    })
+    SendNUIMessage({ action = 'close' })
 end
 
 local function sendMenuData()
     if not menuOpen then return end
-
     SendNUIMessage({
         action = 'refresh',
         binds = getBindRows(),
-        maxBinds = Config.MaxBinds or 50
+        maxBinds = Config.MaxBinds or 50,
+        language = currentLanguage or resolveLanguage()
     })
 end
 
 local function notifyMenu(kind, message)
     if not menuOpen then return end
-
-    SendNUIMessage({
-        action = 'notify',
-        kind = kind,
-        message = message
-    })
+    SendNUIMessage({ action = 'notify', kind = kind, message = message })
 end
 
 local function createBind(key, command)
     key = normalizeKey(key)
     command = normalizeCommand(command)
-
     local keyOk, keyError = isValidKey(key)
-
     if not keyOk then
         notifyError(keyError)
         return false, keyError
     end
-
     if not command then
-        notifyError(tr('invalidCommand'))
-        return false, 'Debes indicar un comando.'
-    end
-
-    local existing = findBindByKey(key)
-
-    if existing then
-        notifyError(tr('alreadyBound', key, existing.command))
-
-        local errorMessage = tr('alreadyBound', key, existing.command)
-
-        notifyInfo(tr('useUnbind', Config.UnbindCommand or 'desbindear', key))
-
+        local errorMessage = tr('commandRequired')
+        notifyError(errorMessage)
         return false, errorMessage
     end
-
+    local existing = findBindByKey(key)
+    if existing then
+        local errorMessage = tr('alreadyBound', key, existing.command)
+        notifyError(errorMessage)
+        notifyInfo(tr('useUnbind', Config.UnbindCommand or 'desbindear', key))
+        return false, errorMessage
+    end
     if getBindCount() >= (Config.MaxBinds or 50) then
         local errorMessage = tr('maxBinds', Config.MaxBinds or 50)
-        notifyError(tr('maxBinds', Config.MaxBinds or 50))
+        notifyError(errorMessage)
         return false, errorMessage
     end
-
     local id = nextId
     nextId = nextId + 1
-
-    local bind = {
-        id = id,
-        key = key,
-        command = command
-    }
-
+    local bind = { id = id, key = key, command = command }
     binds[id] = bind
     usedKeys[key] = id
-
     saveBind(bind)
     saveIndex()
     registerBind(bind)
-
     notifySuccess(tr('bound', key, command))
     sendMenuData()
-
     return true
 end
 
 local function removeBind(key)
     key = normalizeKey(key)
     local bind = findBindByKey(key)
-
     if not bind then
         notifyError(tr('noBind', key or '?'))
         return false
     end
-
-    -- FiveM does not expose an unregister API for RegisterKeyMapping.
-    -- Removing the bind from the active table makes its existing mapping
-    -- a harmless no-op, so the key stops executing the old command.
     binds[bind.id] = nil
     usedKeys[key] = nil
-
     deleteBindStorage(bind.id)
     saveIndex()
-
     notifySuccess(tr('removed', bind.key, bind.command))
-
     sendMenuData()
-
     return true
 end
 
 local function listBinds()
     local rows = {}
-
-    for _, bind in pairs(binds) do
-        rows[#rows + 1] = bind
-    end
-
-    table.sort(rows, function(a, b)
-        return a.key < b.key
-    end)
-
+    for _, bind in pairs(binds) do rows[#rows + 1] = bind end
+    table.sort(rows, function(a, b) return a.key < b.key end)
     if #rows == 0 then
         notifyInfo(tr('noBinds'))
         return
     end
-
     local parts = {}
-
     for i = 1, #rows do
         local bind = rows[i]
         parts[#parts + 1] = ('%s -> /%s'):format(bind.key, bind.command)
     end
-
     notifyInfo(table.concat(parts, '  |  '))
 end
 
 local function handleBindCommand(args)
     if not args[1] then
         notifyInfo(tr('usageBind', Config.Command or 'bindear'))
-
         notifyInfo(tr('example1', Config.Command or 'bindear'))
-
         notifyInfo(tr('example2', Config.Command or 'bindear'))
-
         return
     end
-
     if not args[2] then
         notifyError(tr('commandRequired'))
         return
     end
-
     local commandParts = {}
-
-    for i = 2, #args do
-        commandParts[#commandParts + 1] = args[i]
-    end
-
+    for i = 2, #args do commandParts[#commandParts + 1] = args[i] end
     createBind(args[1], table.concat(commandParts, ' '))
 end
 
@@ -510,10 +332,8 @@ end, false)
 RegisterCommand(Config.UnbindCommand or 'desbindear', function(_, args)
     if not args[1] then
         notifyInfo(tr('usageUnbind', Config.UnbindCommand or 'desbindear'))
-
         return
     end
-
     removeBind(args[1])
 end, false)
 
@@ -522,24 +342,11 @@ RegisterCommand(Config.ListCommand or 'binds', function()
 end, false)
 
 local function toggleMenu()
-    if menuOpen then
-        closeMenu()
-    else
-        openMenu()
-    end
+    if menuOpen then closeMenu() else openMenu() end
 end
 
-RegisterCommand(Config.MenuCommand or 'bindmenu', function()
-    toggleMenu()
-end, false)
-
-RegisterCommand('pvkb_openmenu', function()
-    toggleMenu()
-end, false)
-
--- The menu is intentionally opened only by /bindmenu for now.
--- We will add the optional FiveM key mapping back after the NUI
--- open/close lifecycle is verified in-game.
+RegisterCommand(Config.MenuCommand or 'bindmenu', function() toggleMenu() end, false)
+RegisterCommand('pvkb_openmenu', function() toggleMenu() end, false)
 
 RegisterNUICallback('close', function(_, cb)
     closeMenu()
@@ -547,137 +354,77 @@ RegisterNUICallback('close', function(_, cb)
 end)
 
 RegisterNUICallback('getBinds', function(_, cb)
-    cb({
-        binds = getBindRows(),
-        maxBinds = Config.MaxBinds or 50
-    })
+    cb({ binds = getBindRows(), maxBinds = Config.MaxBinds or 50, language = currentLanguage or resolveLanguage() })
 end)
 
 RegisterNUICallback('createBind', function(data, cb)
     local key = data and data.key
     local command = data and data.command
-
     local beforeCount = getBindCount()
     local success, errorMessage = createBind(key, command)
-
     if success then
-        cb({
-            ok = true,
-            binds = getBindRows(),
-            maxBinds = Config.MaxBinds or 50
-        })
+        cb({ ok = true, binds = getBindRows(), maxBinds = Config.MaxBinds or 50, language = currentLanguage or resolveLanguage() })
         return
     end
-
-    cb({
-        ok = false,
-        binds = getBindRows(),
-        maxBinds = Config.MaxBinds or 50,
-        error = errorMessage or 'No se pudo crear el bind.',
-        count = beforeCount
-    })
+    cb({ ok = false, binds = getBindRows(), maxBinds = Config.MaxBinds or 50, error = errorMessage or tr('createFailed'), count = beforeCount, language = currentLanguage or resolveLanguage() })
 end)
 
 RegisterNUICallback('deleteBind', function(data, cb)
     local id = tonumber(data and data.id)
-
     if not id or not binds[id] then
-        cb({
-            ok = false,
-            binds = getBindRows(),
-            error = 'Ese bind ya no existe.'
-        })
+        local errorMessage = tr('bindNotFound')
+        cb({ ok = false, binds = getBindRows(), error = errorMessage, language = currentLanguage or resolveLanguage() })
         return
     end
-
     local bind = binds[id]
     local success = removeBind(bind.key)
-
-    cb({
-        ok = success,
-        binds = getBindRows(),
-        maxBinds = Config.MaxBinds or 50,
-        error = success and nil or 'No se pudo eliminar el bind.'
-    })
+    cb({ ok = success, binds = getBindRows(), maxBinds = Config.MaxBinds or 50, error = success and nil or tr('deleteFailed'), language = currentLanguage or resolveLanguage() })
 end)
 
 RegisterNUICallback('editBind', function(data, cb)
     local id = tonumber(data and data.id)
     local bind = id and binds[id] or nil
-
     if not bind then
-        cb({
-            ok = false,
-            binds = getBindRows(),
-            error = 'Ese bind ya no existe.'
-        })
+        local errorMessage = tr('bindNotFound')
+        cb({ ok = false, binds = getBindRows(), error = errorMessage, language = currentLanguage or resolveLanguage() })
         return
     end
 
     local newKey = normalizeKey(data.key)
     local newCommand = normalizeCommand(data.command)
-
     local keyOk, keyError = isValidKey(newKey)
-
     if not keyOk then
-        cb({
-            ok = false,
-            binds = getBindRows(),
-            error = keyError
-        })
+        cb({ ok = false, binds = getBindRows(), error = keyError, language = currentLanguage or resolveLanguage() })
         return
     end
-
     if not newCommand then
-        cb({
-            ok = false,
-            binds = getBindRows(),
-            error = 'Debes indicar un comando.'
-        })
+        local errorMessage = tr('commandRequired')
+        cb({ ok = false, binds = getBindRows(), error = errorMessage, language = currentLanguage or resolveLanguage() })
         return
     end
-
     local other = findBindByKey(newKey)
-
     if other and other.id ~= id then
-        cb({
-            ok = false,
-            binds = getBindRows(),
-            error = ('La tecla %s ya está asignada.'):format(newKey)
-        })
+        local errorMessage = tr('keyAssigned', newKey)
+        cb({ ok = false, binds = getBindRows(), error = errorMessage, language = currentLanguage or resolveLanguage() })
         return
     end
 
-    -- RegisterKeyMapping has no unregister API. Recreate this bind with a
-    -- new command identifier so a changed key gets its own mapping.
     binds[id] = nil
     usedKeys[bind.key] = nil
     deleteBindStorage(id)
 
     local newId = nextId
     nextId = nextId + 1
-
-    local newBind = {
-        id = newId,
-        key = newKey,
-        command = newCommand
-    }
-
+    local newBind = { id = newId, key = newKey, command = newCommand }
     binds[newId] = newBind
     usedKeys[newKey] = newId
-
     saveBind(newBind)
     saveIndex()
     registerBind(newBind)
     sendMenuData()
-
     notifySuccess(tr('edited', newKey, newCommand))
 
-    cb({
-        ok = true,
-        binds = getBindRows(),
-        maxBinds = Config.MaxBinds or 50
-    })
+    cb({ ok = true, binds = getBindRows(), maxBinds = Config.MaxBinds or 50, language = currentLanguage or resolveLanguage() })
 end)
 
 RegisterNUICallback('setLanguage', function(data, cb)
@@ -689,7 +436,8 @@ RegisterNUICallback('setLanguage', function(data, cb)
         SetResourceKvp(PREFIX .. 'language', requested)
         currentLanguage = requested
     else
-        cb({ ok = false, error = 'Invalid language.' })
+        local errorMessage = tr('invalidLanguage')
+        cb({ ok = false, error = errorMessage })
         return
     end
     sendMenuData()
@@ -698,57 +446,34 @@ RegisterNUICallback('setLanguage', function(data, cb)
 end)
 
 RegisterNUICallback('getConfig', function(_, cb)
-    cb({
-        maxBinds = Config.MaxBinds or 50,
-        language = currentLanguage or resolveLanguage()
-    })
+    cb({ maxBinds = Config.MaxBinds or 50, language = currentLanguage or resolveLanguage() })
 end)
 
 AddEventHandler('onClientResourceStop', function(resourceName)
-    if resourceName == RESOURCE then
-        SetNuiFocus(false, false)
-    end
+    if resourceName == RESOURCE then SetNuiFocus(false, false) end
 end)
 
 exports('GetBinds', function()
     local result = {}
-
     for id, bind in pairs(binds) do
-        result[id] = {
-            key = bind.key,
-            command = bind.command
-        }
+        result[id] = { key = bind.key, command = bind.command }
     end
-
     return result
 end)
 
 exports('GetBind', function(key)
     local bind = findBindByKey(key)
-
     if not bind then return nil end
-
-    return {
-        id = bind.id,
-        key = bind.key,
-        command = bind.command
-    }
+    return { id = bind.id, key = bind.key, command = bind.command }
 end)
 
-exports('AddBind', function(key, command)
-    return createBind(key, command)
-end)
-
-exports('RemoveBind', function(key)
-    return removeBind(key)
-end)
+exports('AddBind', function(key, command) return createBind(key, command) end)
+exports('RemoveBind', function(key) return removeBind(key) end)
 
 CreateThread(function()
-    -- Always start with the NUI fully closed and without input focus.
     menuOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
-
     Wait(0)
     loadBinds()
 end)
