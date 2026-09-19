@@ -490,12 +490,9 @@ RegisterCommand('pvkb_openmenu', function()
     toggleMenu()
 end, false)
 
-RegisterKeyMapping(
-    'pvkb_openmenu',
-    'PV Keybinder: Open Menu',
-    'keyboard',
-    Config.MenuKey or ''
-)
+-- The menu is intentionally opened only by /bindmenu for now.
+-- We will add the optional FiveM key mapping back after the NUI
+-- open/close lifecycle is verified in-game.
 
 RegisterNUICallback('close', function(_, cb)
     closeMenu()
@@ -685,6 +682,11 @@ exports('RemoveBind', function(key)
 end)
 
 CreateThread(function()
+    -- Always start with the NUI fully closed and without input focus.
+    menuOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+
     Wait(0)
     loadBinds()
 end)
