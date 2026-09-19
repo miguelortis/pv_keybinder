@@ -10,6 +10,10 @@ Config = {
     -- FiveM Settings > Key Bindings > FiveM.
     MenuKey = '',
 
+    -- Languages: auto detects the local system locale. Available: es, en, pt.
+    Language = 'auto',
+    DefaultLanguage = 'es',
+
     StoragePrefix = 'pv_keybinder:bind:',
     Debug = false,
 
