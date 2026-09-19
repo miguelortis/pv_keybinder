@@ -1,9 +1,9 @@
 Config = {
-    -- FiveM reserves the native "bind" command in production.
-    -- The chat hook lets pv_keybinder still accept /bind from chat.
-    Command = 'pvbind',
-
-    ChatHook = true,
+    -- Custom command names are used so pv_keybinder never depends on
+    -- FiveM's reserved native "bind" command.
+    Command = 'bindear',
+    UnbindCommand = 'desbindear',
+    ListCommand = 'binds',
 
     StoragePrefix = 'pv_keybinder:bind:',
     Debug = false,
