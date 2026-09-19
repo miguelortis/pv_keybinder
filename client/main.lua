@@ -116,18 +116,6 @@ local function deleteBindStorage(id)
     DeleteResourceKvp(storageKey(id))
 end
 
-local function unbindKey(key)
-    key = normalizeKey(key)
-
-    if not key then return end
-
-    -- RegisterKeyMapping has no resource-side unregister API.
-    -- FiveM's client 'unbind' command is the supported way to remove
-    -- the active mapping for a physical input.
-    ExecuteCommand(('unbind keyboard %s'):format(key:lower()))
-
-    debugPrint(('unbound keyboard [%s]'):format(key))
-end
 
 local function createCommandName(id)
     return ('pvkb_%s'):format(id)
@@ -147,6 +135,13 @@ local function registerBind(bind)
     local commandName = createCommandName(bind.id)
 
     RegisterCommand(commandName, function()
+        -- RegisterKeyMapping has no resource-side unregister API.
+        -- The mapping can remain registered, but it must become inert
+        -- immediately after /desbindear removes the bind from memory.
+        if binds[bind.id] ~= bind then
+            return
+        end
+
         executeBoundCommand(bind)
     end, false)
 
@@ -311,10 +306,9 @@ local function removeBind(key)
         return false
     end
 
-    -- Remove the actual FiveM key mapping first.
-    -- Deleting the Lua table/KVP alone does not unregister RegisterKeyMapping.
-    unbindKey(bind.key)
-
+    -- FiveM does not expose an unregister API for RegisterKeyMapping.
+    -- Removing the bind from the active table makes its existing mapping
+    -- a harmless no-op, so the key stops executing the old command.
     binds[bind.id] = nil
     usedKeys[key] = nil
 
