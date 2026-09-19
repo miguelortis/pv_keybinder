@@ -253,6 +253,16 @@ end
 local function notify(message)
     if not message or message == '' then return end
 
+    -- FiveM color codes are useful for console output but should not be
+    -- passed to the HUD feed as literal text. Convert them to a small
+    -- HTML-like visual style using native color tags only where supported.
+    -- For the feed, strip all ^ color codes first.
+    message = message:gsub('%^%d', '')
+    message = message:gsub('%^r', '')
+    message = message:gsub('%^R', '')
+    message = message:gsub('%^s', '')
+    message = message:gsub('%^S', '')
+
     BeginTextCommandThefeedPost('STRING')
     AddTextComponentSubstringPlayerName(message)
     EndTextCommandThefeedPostTicker(false, true)
