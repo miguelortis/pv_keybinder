@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PV Keybinder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main id="app" class="hidden">
+        <section class="panel">
+            <header class="topbar">
+                <div>
+                    <div class="eyebrow">PV DEVELOPMENT</div>
+                    <h1>Keybinder</h1>
+                    <p>Administra tus teclas y comandos locales.</p>
+                </div>
+                <button id="closeBtn" class="icon-btn" aria-label="Cerrar">×</button>
+            </header>
+            <div id="notice" class="notice hidden"></div>
+            <div class="toolbar">
+                <div class="search-wrap"><span>⌕</span><input id="search" type="text" placeholder="Buscar tecla o comando..."></div>
+                <div id="count" class="count">0 / 50</div>
+            </div>
+            <section id="bindList" class="bind-list"></section>
+            <section id="empty" class="empty hidden">
+                <div class="empty-icon">⌨</div>
+                <h2>No tienes binds configurados</h2>
+                <p>Agrega tu primera tecla personalizada.</p>
+            </section>
+            <footer class="footer">
+                <button id="addBtn" class="primary">＋ Agregar bind</button>
+                <button id="commandBtn" class="secondary">/bindear</button>
+                <span class="hint">ESC para cerrar</span>
+            </footer>
+        </section>
+
+        <section id="editor" class="modal hidden">
+            <div class="editor-card">
+                <div class="editor-head">
+                    <div><div class="eyebrow">CONFIGURACIÓN</div><h2 id="editorTitle">Nuevo bind</h2></div>
+                    <button id="editorClose" class="icon-btn">×</button>
+                </div>
+                <div class="field">
+                    <label>Tecla</label>
+                    <button id="keyCapture" class="key-capture">
+                        <span id="keyValue">Presiona una tecla</span>
+                        <small id="keyHelp">La tecla debe estar permitida por el servidor.</small>
+                    </button>
+                </div>
+                <div class="field">
+                    <label for="commandInput">Comando</label>
+                    <div class="command-input"><span>/</span><input id="commandInput" type="text" autocomplete="off" spellcheck="false" placeholder="e dance"></div>
+                    <small>Ejemplo: <b>e dance</b> o <b>inventory</b>. No necesitas escribir la barra /.</small>
+                </div>
+                <div id="editorError" class="form-error hidden"></div>
+                <div class="editor-actions">
+                    <button id="cancelBtn" class="secondary">Cancelar</button>
+                    <button id="saveBtn" class="primary">Guardar</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="confirm" class="modal hidden">
+            <div class="confirm-card">
+                <div class="danger-icon">!</div>
+                <h2>Eliminar bind</h2>
+                <p id="confirmText">¿Quieres eliminar este bind?</p>
+                <div class="editor-actions">
+                    <button id="confirmCancel" class="secondary">Cancelar</button>
+                    <button id="confirmDelete" class="danger">Eliminar</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
