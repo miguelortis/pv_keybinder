@@ -4,21 +4,46 @@ Persistent, framework-agnostic custom /bind system for FiveM.
 
 ## Commands
 
-Players can create local key binds:
+Create a bind:
 
     /bind F9 e dance
-    /bind X /e dance
-    /bind F10 me hello
+    /bind F9 /e dance
+    /bind X e sit
+    /bind F10 me Hello everyone
 
-The leading slash is optional.
-
-List current binds:
+List binds:
 
     /binds
 
 Remove a bind:
 
     /unbind F9
+
+The slash before the target command is optional.
+
+## Key validation
+
+The resource validates the requested key against FiveM's documented KEYBOARD input names before creating the mapping.
+
+Supported families include:
+
+- A-Z
+- 0-9
+- F1-F24
+- arrows
+- navigation keys
+- numpad keys
+- modifiers
+- punctuation/OEM keys
+
+Examples:
+
+    /bind F9 e dance
+    /bind X e sit
+    /bind NUMPAD1 e wave
+    /bind F24 e salute
+
+Invalid input names are rejected instead of creating a mapping that FiveM may not recognize.
 
 ## Blacklist
 
@@ -30,32 +55,67 @@ Edit `config.lua`:
         S = true,
         D = true,
         SPACE = true,
-        LSHIFT = true
+        LSHIFT = true,
+        LCONTROL = true
     }
 
-Keys are normalized to uppercase, so `x`, `X` and `x ` are treated consistently.
+The default configuration blocks movement keys and several core/system keys.
 
-The resource rejects blacklisted keys before creating the mapping.
+Aliases are accepted for convenience:
+
+    ESC      -> ESCAPE
+    ENTER    -> RETURN
+    CTRL     -> LCONTROL
+    LCTRL    -> LCONTROL
+    RCTRL    -> RCONTROL
+    ALT      -> LMENU
+    LALT     -> LMENU
+    RALT     -> RMENU
+    CAPSLOCK -> CAPITAL
+    BACKSPACE -> BACK
+    TILDE    -> GRAVE
+
+Keys are normalized to uppercase.
+
+## Conflicts
+
+A key can only have one pv_keybinder bind.
+
+For example:
+
+    /bind F9 e dance
+
+followed by:
+
+    /bind F9 e wave
+
+will be rejected. The player must first use:
+
+    /unbind F9
+
+This prevents the resource from creating duplicate local definitions for the same key.
 
 ## Persistence
 
 Each bind is stored locally using FiveM resource KVP.
 
-The stored data contains only:
+Stored data contains:
 
     key
     command
     local bind id
 
-No license, identifier, character ID or database is required.
+No SQL, identifier, license or framework callback is required.
 
-When the player reconnects, pv_keybinder reads the local KVP data and recreates the mappings.
+On resource startup, pv_keybinder loads the local data and recreates the registered mappings.
+
+FiveM also maintains its own user-editable key mapping configuration for RegisterKeyMapping.
 
 ## Framework compatibility
 
 There is no ESX, QBCore, Qbox, vRP or framework dependency.
 
-The command executed by a bind is simply passed to FiveM's client command system. This makes it possible to bind framework-specific commands without pv_keybinder knowing which framework is installed.
+The command attached to a bind is executed through the client's command system, so the target command can belong to any framework/resource that registers a client command.
 
 Examples:
 
@@ -66,17 +126,22 @@ Examples:
 
 ## Performance
 
-There is no permanent input polling loop and no `Wait(0)` key scanner.
+There is no permanent input polling loop and no per-frame key scanner.
 
-Bindings use FiveM's native RegisterCommand + RegisterKeyMapping system.
+The resource uses:
 
-The only startup work is loading the small local KVP index and recreating the player's saved mappings.
+    RegisterCommand
+    RegisterKeyMapping
+
+The only startup work is loading the small local KVP data and registering the saved mappings.
 
 ## Limits
 
-`Config.MaxBinds` limits the number of custom binds stored by the resource.
+`Config.MaxBinds` controls the maximum number of pv_keybinder entries.
 
-The default is 50.
+Default:
+
+    50
 
 ## Installation
 
@@ -84,7 +149,7 @@ Add:
 
     ensure pv_keybinder
 
-Start it before any resource that needs its exports.
+Start it before resources that depend on it.
 
 ## Exports
 
@@ -97,8 +162,20 @@ Example:
 
     local ok = exports.pv_keybinder:AddBind('F9', 'e dance')
 
-## Important FiveM behavior
+## FiveM references
 
-FiveM owns the actual input mapping through RegisterKeyMapping. pv_keybinder uses client KVP as its own persistence/index layer and recreates the mappings when it starts.
+FiveM documents the KEYBOARD mapper inputs here:
 
-This avoids the blocked /bind workflow while still giving players a simple /bind command controlled by the resource.
+https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard/
+
+FiveM documents RegisterKeyMapping and user-editable bindings here:
+
+https://docs.fivem.net/docs/cookbook/2020/01/06/using-the-new-console-key-bindings/
+
+FiveM also documents its native console bind/unbind commands. pv_keybinder intentionally provides its own player-facing /bind layer instead of relying on the console workflow.
+
+## Important behavior
+
+FiveM owns the actual input mapping through RegisterKeyMapping. pv_keybinder maintains the player's local bind definitions and recreates them when the resource starts.
+
+The server never needs to poll, store or synchronize key presses.
