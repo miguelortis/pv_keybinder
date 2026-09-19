@@ -2,43 +2,27 @@
 
 Persistent, framework-agnostic custom key binding system for FiveM.
 
-## Exact /bind support
-
-FiveM reserves the native `bind` command. In production, the native console command is restricted, so registering a resource command with the same name does not give the resource ownership of `/bind`.
-
-pv_keybinder therefore uses the standard FiveM `chat` resource message hook to intercept:
-
-    /bind F9 e dance
-    /bind X /e dance
-    /unbind F9
-    /binds
-
-The hook cancels the original chat message and sends the command to pv_keybinder.
-
-If a server uses a custom chat implementation instead of the standard `chat` resource, the fallback command is:
-
-    /pvbind F9 e dance
-
-Set `Config.ChatHook = false` if the server does not use the standard chat resource.
-
 ## Commands
 
-    /bind F9 e dance
-    /bind F9 /e dance
-    /bind X e sit
-    /bind F10 me Hello everyone
+The resource intentionally does **not** use FiveM's native `/bind` command because `bind` is a reserved FiveM console command and can be disabled in production. citeturn0search6
 
-List:
+Use these custom commands instead:
+
+    /bindear F9 e dance
+    /bindear F9 /e dance
+    /bindear X e sit
+
+List your local binds:
 
     /binds
 
-Remove:
+Remove a bind:
 
-    /unbind F9
+    /desbindear F9
 
-Fallback when the standard chat resource is unavailable:
+### Why these names?
 
-    /pvbind F9 e dance
+`/bindear` and `/desbindear` are normal resource commands registered with FiveM's `RegisterCommand`, so they are not dependent on the reserved native `bind` command. FiveM documents `RegisterCommand` as the standard way to create player commands. citeturn0search0
 
 ## Key validation
 
@@ -54,6 +38,8 @@ Supported families include:
 - numpad
 - modifiers
 - punctuation/OEM keys
+
+The supported names follow FiveM's keyboard input mapper list. citeturn0search14
 
 ## Blacklist
 
@@ -75,12 +61,12 @@ The default configuration blocks movement and several core/system keys.
 
 A key can only have one pv_keybinder entry.
 
-    /bind F9 e dance
-    /bind F9 e wave
+    /bindear F9 e dance
+    /bindear F9 e wave
 
 The second command is rejected until:
 
-    /unbind F9
+    /desbindear F9
 
 ## Persistence
 
@@ -88,7 +74,7 @@ Binds are stored locally using FiveM resource KVP.
 
 No SQL, license, identifier, character ID or framework callback is required.
 
-On resource startup, pv_keybinder loads the local entries and recreates their RegisterKeyMapping registrations.
+On resource startup, pv_keybinder loads the local entries and recreates their `RegisterKeyMapping` registrations.
 
 ## Framework compatibility
 
@@ -96,29 +82,32 @@ No ESX, QBCore, Qbox, vRP or other framework dependency exists.
 
 The target command is executed through FiveM's client command system, allowing binds such as:
 
-    /bind F9 e dance
-    /bind F10 emote wave
-    /bind X inventory
-    /bind F11 phone
+    /bindear F9 e dance
+    /bindear F10 emote wave
+    /bindear X inventory
+    /bindear F11 phone
 
 ## Performance
 
 No per-frame keyboard polling is used.
 
-The resource uses RegisterCommand and RegisterKeyMapping, plus one startup KVP load.
+The resource uses `RegisterCommand` and `RegisterKeyMapping`, plus one startup KVP load. FiveM's key mapping system is designed for user-editable bindings. citeturn0search3
 
 ## Configuration
 
-    Config.ChatHook = true
+    Config.Command = 'bindear'
+    Config.UnbindCommand = 'desbindear'
+    Config.ListCommand = 'binds'
     Config.MaxBinds = 50
     Config.Blacklist = { ... }
 
 ## Installation
 
-    ensure chat
+Add the resource to your server and start it:
+
     ensure pv_keybinder
 
-The resource waits for `chat` before installing the message hook, so startup order is not critical as long as the standard chat resource eventually starts.
+No chat patch is required.
 
 ## Exports
 
@@ -132,11 +121,11 @@ The resource waits for `chat` before installing the message hook, so startup ord
 Keyboard mapper inputs:
 https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard/
 
+RegisterCommand:
+https://docs.fivem.net/docs/scripting-manual/migrating-from-deprecated/creating-commands/
+
 RegisterKeyMapping:
 https://docs.fivem.net/docs/cookbook/2020/01/06/using-the-new-console-key-bindings/
-
-Chat message hooks:
-https://docs.fivem.net/docs/resources/chat/exports/registerMessageHook/
 
 Console commands:
 https://docs.fivem.net/docs/client-manual/console-commands/
