@@ -11,21 +11,16 @@ local VALID_KEYS = {
     PAGEDOWN = true, NEXT = true, END = true, HOME = true,
     LEFT = true, UP = true, RIGHT = true, DOWN = true,
     SYSRQ = true, SNAPSHOT = true, INSERT = true, DELETE = true,
-
     LWIN = true, RWIN = true, APPS = true,
-
     NUMPAD0 = true, NUMPAD1 = true, NUMPAD2 = true, NUMPAD3 = true,
     NUMPAD4 = true, NUMPAD5 = true, NUMPAD6 = true, NUMPAD7 = true,
     NUMPAD8 = true, NUMPAD9 = true,
     MULTIPLY = true, ADD = true, SUBTRACT = true, DECIMAL = true,
     DIVIDE = true, NUMPADEQUALS = true, NUMPADENTER = true,
-
     NUMLOCK = true, SCROLL = true,
-
     LSHIFT = true, RSHIFT = true,
     LCONTROL = true, RCONTROL = true,
     LMENU = true, RMENU = true,
-
     OEM_1 = true, SEMICOLON = true, EQUALS = true, PLUS = true,
     COMMA = true, MINUS = true, PERIOD = true, SLASH = true,
     OEM_2 = true, OEM_3 = true, GRAVE = true,
@@ -137,6 +132,7 @@ local function executeBoundCommand(bind)
     if not bind or not bind.command then return end
 
     local command = normalizeCommand(bind.command)
+
     if command then
         ExecuteCommand(command)
     end
@@ -168,6 +164,7 @@ local function loadBinds()
 
     if indexData then
         local ok, data = pcall(json.decode, indexData)
+
         if ok and type(data) == 'table' then
             nextId = tonumber(data.nextId) or 1
         end
@@ -211,17 +208,21 @@ end
 
 local function getBindCount()
     local count = 0
+
     for _ in pairs(binds) do
         count = count + 1
     end
+
     return count
 end
 
 local function findBindByKey(key)
     key = normalizeKey(key)
+
     if not key then return nil end
 
     local id = usedKeys[key]
+
     return id and binds[id] or nil
 end
 
@@ -286,11 +287,13 @@ local function createBind(key, command)
     registerBind(bind)
 
     printSuccess(('Bound ^3%s^7 -> ^3/%s^7'):format(key, command))
+
     return true
 end
 
 local function removeBind(key)
     key = normalizeKey(key)
+
     local bind = findBindByKey(key)
 
     if not bind then
@@ -332,11 +335,15 @@ local function listBinds()
 
     for i = 1, #rows do
         local bind = rows[i]
-        print(('  ^5%s^7 -> ^2/%s^7'):format(bind.key, bind.command))
+
+        print(('  ^5%s^7 -> ^2/%s^7'):format(
+            bind.key,
+            bind.command
+        ))
     end
 end
 
-RegisterCommand(Config.Command or 'bind', function(_, args)
+local function handleBindCommand(args)
     if not args[1] then
         print('^3Usage:^7 /bind [key] [command]')
         print('^3Example:^7 /bind F9 e dance')
@@ -357,6 +364,11 @@ RegisterCommand(Config.Command or 'bind', function(_, args)
     end
 
     createBind(args[1], table.concat(commandParts, ' '))
+end
+
+-- Fallback command. /bind itself is reserved by FiveM in production.
+RegisterCommand(Config.Command or 'pvbind', function(_, args)
+    handleBindCommand(args)
 end, false)
 
 RegisterCommand('unbind', function(_, args)
@@ -371,6 +383,22 @@ end, false)
 RegisterCommand('binds', function()
     listBinds()
 end, false)
+
+-- Exact /bind support when the standard FiveM chat resource is present.
+RegisterNetEvent('pv_keybinder:chatCommand', function(command, args)
+    if command == 'bind' then
+        handleBindCommand(args or {})
+    elseif command == 'unbind' then
+        if not args or not args[1] then
+            print('^3Usage:^7 /unbind [key]')
+            return
+        end
+
+        removeBind(args[1])
+    elseif command == 'binds' then
+        listBinds()
+    end
+end)
 
 exports('GetBinds', function()
     local result = {}
@@ -387,6 +415,7 @@ end)
 
 exports('GetBind', function(key)
     local bind = findBindByKey(key)
+
     if not bind then return nil end
 
     return {
