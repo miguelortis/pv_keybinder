@@ -250,16 +250,24 @@ local function findBindByKey(key)
     return id and binds[id] or nil
 end
 
-local function printError(message)
-    print(('^1[pv_keybinder]^7 %s'):format(message))
+local function notify(message)
+    if not message or message == '' then return end
+
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName(message)
+    EndTextCommandThefeedPostTicker(false, true)
 end
 
-local function printSuccess(message)
-    print(('^2[pv_keybinder]^7 %s'):format(message))
+local function notifyError(message)
+    notify(('~r~PV Keybinder~s~: %s'):format(message))
 end
 
-local function printInfo(message)
-    print(('^3[pv_keybinder]^7 %s'):format(message))
+local function notifySuccess(message)
+    notify(('~g~PV Keybinder~s~: %s'):format(message))
+end
+
+local function notifyInfo(message)
+    notify(('~b~PV Keybinder~s~: %s'):format(message))
 end
 
 local function openMenu()
@@ -309,19 +317,19 @@ local function createBind(key, command)
     local keyOk, keyError = isValidKey(key)
 
     if not keyOk then
-        printError(keyError)
+        notifyError(keyError)
         return false, keyError
     end
 
     if not command then
-        printError('Invalid command.')
+        notifyError('Invalid command.')
         return false, 'Debes indicar un comando.'
     end
 
     local existing = findBindByKey(key)
 
     if existing then
-        printError(('The key ^3%s^7 is already bound to ^3/%s^7.'):format(
+        notifyError(('The key ^3%s^7 is already bound to ^3/%s^7.'):format(
             key,
             existing.command
         ))
@@ -331,7 +339,7 @@ local function createBind(key, command)
             existing.command
         )
 
-        printInfo(('Use /%s %s first.'):format(
+        notifyInfo(('Use /%s %s first.'):format(
             Config.UnbindCommand or 'desbindear',
             key
         ))
@@ -341,7 +349,7 @@ local function createBind(key, command)
 
     if getBindCount() >= (Config.MaxBinds or 50) then
         local errorMessage = ('Has alcanzado el máximo de %s binds.'):format(Config.MaxBinds or 50)
-        printError(('Maximum of %s binds reached.'):format(Config.MaxBinds or 50))
+        notifyError(('Maximum of %s binds reached.'):format(Config.MaxBinds or 50))
         return false, errorMessage
     end
 
@@ -361,7 +369,7 @@ local function createBind(key, command)
     saveIndex()
     registerBind(bind)
 
-    printSuccess(('Bound ^3%s^7 -> ^3/%s^7'):format(key, command))
+    notifySuccess(('Bound ^3%s^7 -> ^3/%s^7'):format(key, command))
     sendMenuData()
 
     return true
@@ -372,7 +380,7 @@ local function removeBind(key)
     local bind = findBindByKey(key)
 
     if not bind then
-        printError(('No bind exists for ^3%s^7.'):format(key or '?'))
+        notifyError(('No bind exists for ^3%s^7.'):format(key or '?'))
         return false
     end
 
@@ -385,7 +393,7 @@ local function removeBind(key)
     deleteBindStorage(bind.id)
     saveIndex()
 
-    printSuccess(('Removed bind ^3%s^7 -> ^3/%s^7'):format(
+    notifySuccess(('Removed bind ^3%s^7 -> ^3/%s^7'):format(
         bind.key,
         bind.command
     ))
@@ -406,34 +414,32 @@ local function listBinds()
         return a.key < b.key
     end)
 
-    print('^3[pv_keybinder]^7 Your local binds:')
-
     if #rows == 0 then
-        print('  ^8No binds configured.^7')
+        notifyInfo('No tienes binds configurados.')
         return
     end
 
+    local parts = {}
+
     for i = 1, #rows do
         local bind = rows[i]
-
-        print(('  ^5%s^7 -> ^2/%s^7'):format(
-            bind.key,
-            bind.command
-        ))
+        parts[#parts + 1] = ('%s -> /%s'):format(bind.key, bind.command)
     end
+
+    notifyInfo(table.concat(parts, '  |  '))
 end
 
 local function handleBindCommand(args)
     if not args[1] then
-        print(('^3Usage:^7 /%s [key] [command]'):format(
+        notifyInfo(('Uso: /%s [tecla] [comando]'):format(
             Config.Command or 'bindear'
         ))
 
-        print(('^3Example:^7 /%s F9 e dance'):format(
+        notifyInfo(('Ejemplo: /%s F9 e dance'):format(
             Config.Command or 'bindear'
         ))
 
-        print(('^3Example:^7 /%s X /e dance'):format(
+        notifyInfo(('Ejemplo: /%s X /e dance'):format(
             Config.Command or 'bindear'
         ))
 
@@ -441,7 +447,7 @@ local function handleBindCommand(args)
     end
 
     if not args[2] then
-        printError('You must specify a command.')
+        notifyError('You must specify a command.')
         return
     end
 
@@ -624,7 +630,7 @@ RegisterNUICallback('editBind', function(data, cb)
     registerBind(newBind)
     sendMenuData()
 
-    printSuccess(('Edited bind ^3%s^7 -> ^3/%s^7'):format(
+    notifySuccess(('Edited bind ^3%s^7 -> ^3/%s^7'):format(
         newKey,
         newCommand
     ))
