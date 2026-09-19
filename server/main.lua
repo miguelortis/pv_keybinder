@@ -1,0 +1,3 @@
+-- Intentionally empty.
+-- Key preferences are stored on the client.
+-- No SQL/framework/network traffic is required for persistence.
