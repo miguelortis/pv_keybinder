@@ -1,0 +1,69 @@
+-- PATCH FOR THE DEFAULT FIVE M CHAT RESOURCE
+--
+-- Why this is needed:
+-- The default chat client executes slash commands directly with:
+--
+--     ExecuteCommand(data.message:sub(2))
+--
+-- FiveM reserves the native "bind" command and blocks it in production.
+-- Therefore a standalone resource cannot intercept /bind after the chat
+-- resource has already called ExecuteCommand().
+--
+-- Replace the block:
+--
+--     if data.message:sub(1, 1) == '/' then
+--         ExecuteCommand(data.message:sub(2))
+--     else
+--         TriggerServerEvent('_chat:messageEntered', GetPlayerName(id), { r, g, b }, data.message)
+--     end
+--
+-- with:
+--
+--     if data.message:sub(1, 1) == '/' then
+--         local commandLine = data.message:sub(2)
+--         local command = commandLine:match('^%s*([^%s]+)')
+--
+--         if command then
+--             command = command:lower()
+--         end
+--
+--         if command == 'bind'
+--             or command == 'unbind'
+--             or command == 'binds' then
+--
+--             TriggerEvent('pv_keybinder:chatInput', commandLine)
+--         else
+--             ExecuteCommand(commandLine)
+--         end
+--     else
+--         TriggerServerEvent('_chat:messageEntered', GetPlayerName(id), { r, g, b }, data.message)
+--     end
+--
+-- Then add this client handler to pv_keybinder/client/main.lua:
+--
+--     RegisterNetEvent('pv_keybinder:chatInput', function(commandLine)
+--         local args = {}
+--
+--         for value in string.gmatch(commandLine, '%S+') do
+--             args[#args + 1] = value
+--         end
+--
+--         local command = table.remove(args, 1)
+--
+--         if command == 'bind' then
+--             handleBindCommand(args)
+--         elseif command == 'unbind' then
+--             if args[1] then
+--                 removeBind(args[1])
+--             end
+--         elseif command == 'binds' then
+--             listBinds()
+--         end
+--     end)
+--
+-- This preserves every normal chat command and only diverts the three
+-- pv_keybinder commands.
+--
+-- IMPORTANT:
+-- A stock FiveM chat resource may be replaced/updated by the server pack.
+-- Keep this patch documented and reapply it if the chat resource is updated.
