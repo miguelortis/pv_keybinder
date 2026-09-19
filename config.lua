@@ -4,6 +4,11 @@ Config = {
     Command = 'bindear',
     UnbindCommand = 'desbindear',
     ListCommand = 'binds',
+    MenuCommand = 'bindmenu',
+
+    -- Empty by default: the player can assign this action in
+    -- FiveM Settings > Key Bindings > FiveM.
+    MenuKey = '',
 
     StoragePrefix = 'pv_keybinder:bind:',
     Debug = false,
