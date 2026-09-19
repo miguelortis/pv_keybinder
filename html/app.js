@@ -45,7 +45,6 @@ function applyLanguage(){
     render();
 }
 
-
 const KEY_MAP={Escape:'ESCAPE',Enter:'RETURN',Backspace:'BACK',Tab:'TAB',Space:'SPACE',ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',Home:'HOME',End:'END',PageUp:'PAGEUP',PageDown:'PAGEDOWN',Insert:'INSERT',Delete:'DELETE',Pause:'PAUSE',CapsLock:'CAPITAL',NumLock:'NUMLOCK',ScrollLock:'SCROLL',ShiftLeft:'LSHIFT',ShiftRight:'RSHIFT',ControlLeft:'LCONTROL',ControlRight:'RCONTROL',AltLeft:'LMENU',AltRight:'RMENU',MetaLeft:'LWIN',MetaRight:'RWIN',ContextMenu:'APPS',NumpadMultiply:'MULTIPLY',NumpadAdd:'ADD',NumpadSubtract:'SUBTRACT',NumpadDecimal:'DECIMAL',NumpadDivide:'DIVIDE',NumpadEnter:'NUMPADENTER'};
 
 function post(name,data){return fetch('https://'+GetParentResourceName()+'/'+name,{method:'POST',headers:{'Content-Type':'application/json; charset=UTF-8'},body:JSON.stringify(data||{})}).then(r=>r.json())}
@@ -61,7 +60,7 @@ function keyFromEvent(e){
 }
 function showNotice(message){clearTimeout(noticeTimer);notice.textContent=message;notice.classList.remove('hidden');noticeTimer=setTimeout(()=>notice.classList.add('hidden'),3500)}
 function showEditorError(message){editorError.textContent=message||'';editorError.classList.toggle('hidden',!message)}
-function escapeHtml(v){return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}
+function escapeHtml(v){return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;")}
 function render(){
     const term=search.value.trim().toLowerCase();
     const filtered=binds.filter(b=>!term||b.key.toLowerCase().includes(term)||b.command.toLowerCase().includes(term));
@@ -70,8 +69,8 @@ function render(){
     filtered.forEach(bind=>{
         const row=document.createElement('div');row.className='bind-row';
         row.innerHTML='<div><span class="bind-key">'+escapeHtml(prettyKey(bind.key))+'</span></div>'+
-            '<div class="bind-command"><strong>/'+escapeHtml(bind.command)+'</strong><small>Bind #'+bind.id+'</small></div>'+
-            '<div class="row-actions"><button class="small-btn edit" data-id="'+bind.id+'">Editar</button><button class="small-btn delete" data-id="'+bind.id+'">Eliminar</button></div>';
+            '<div class="bind-command"><strong>/'+escapeHtml(bind.command)+'</strong><small>'+t('bind')+' #'+bind.id+'</small></div>'+
+            '<div class="row-actions"><button class="small-btn edit" data-id="'+bind.id+'">'+t('edit')+'</button><button class="small-btn delete" data-id="'+bind.id+'">'+t('remove')+'</button></div>';
         bindList.appendChild(row);
     });
     const noResults=filtered.length===0;
@@ -106,6 +105,7 @@ function saveEditor(){
 function requestDelete(id){const bind=binds.find(b=>b.id===id);if(!bind)return;pendingDeleteId=id;confirmText.textContent=t('deleteQuestion').replace('bind',prettyKey(bind.key)+' → /'+bind.command);confirmModal.classList.remove('hidden')}
 function closeConfirm(){pendingDeleteId=null;confirmModal.classList.add('hidden')}
 function deletePending(){if(!pendingDeleteId)return;post('deleteBind',{id:pendingDeleteId}).then(result=>{if(!result.ok){showNotice(result.error||t('commError'));return}binds=result.binds||[];maxBinds=result.maxBinds||maxBinds;closeConfirm();render()}).catch(()=>showNotice(t('commError')))}
+
 function closeMenu(){post('close').catch(()=>{})}
 
 document.getElementById('languageSelect').addEventListener('change',event=>{
