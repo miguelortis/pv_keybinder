@@ -5,6 +5,61 @@ local binds = {}
 local usedKeys = {}
 local nextId = 1
 
+local VALID_KEYS = {
+    BACK = true, TAB = true, RETURN = true, PAUSE = true, CAPITAL = true,
+    ESCAPE = true, SPACE = true, PAGEUP = true, PRIOR = true,
+    PAGEDOWN = true, NEXT = true, END = true, HOME = true,
+    LEFT = true, UP = true, RIGHT = true, DOWN = true,
+    SYSRQ = true, SNAPSHOT = true, INSERT = true, DELETE = true,
+
+    LWIN = true, RWIN = true, APPS = true,
+
+    NUMPAD0 = true, NUMPAD1 = true, NUMPAD2 = true, NUMPAD3 = true,
+    NUMPAD4 = true, NUMPAD5 = true, NUMPAD6 = true, NUMPAD7 = true,
+    NUMPAD8 = true, NUMPAD9 = true,
+    MULTIPLY = true, ADD = true, SUBTRACT = true, DECIMAL = true,
+    DIVIDE = true, NUMPADEQUALS = true, NUMPADENTER = true,
+
+    NUMLOCK = true, SCROLL = true,
+
+    LSHIFT = true, RSHIFT = true,
+    LCONTROL = true, RCONTROL = true,
+    LMENU = true, RMENU = true,
+
+    OEM_1 = true, SEMICOLON = true, EQUALS = true, PLUS = true,
+    COMMA = true, MINUS = true, PERIOD = true, SLASH = true,
+    OEM_2 = true, OEM_3 = true, GRAVE = true,
+    LBRACKET = true, OEM_4 = true, OEM_5 = true,
+    BACKSLASH = true, OEM_6 = true, RBRACKET = true,
+    APOSTROPHE = true, OEM_7 = true, OEM_102 = true
+}
+
+for i = 0, 9 do
+    VALID_KEYS[tostring(i)] = true
+end
+
+for i = string.byte('A'), string.byte('Z') do
+    VALID_KEYS[string.char(i)] = true
+end
+
+for i = 1, 24 do
+    VALID_KEYS['F' .. i] = true
+end
+
+local KEY_ALIASES = {
+    ESC = 'ESCAPE',
+    ENTER = 'RETURN',
+    CTRL = 'LCONTROL',
+    LCTRL = 'LCONTROL',
+    RCTRL = 'RCONTROL',
+    ALT = 'LMENU',
+    LALT = 'LMENU',
+    RALT = 'RMENU',
+    CAPSLOCK = 'CAPITAL',
+    BACKSPACE = 'BACK',
+    TILDE = 'GRAVE'
+}
+
 local function debugPrint(message)
     if Config.Debug then
         print(('[%s] %s'):format(RESOURCE, message))
@@ -18,7 +73,25 @@ local function normalizeKey(key)
 
     if key == '' then return nil end
 
-    return key
+    return KEY_ALIASES[key] or key
+end
+
+local function isValidKey(key)
+    key = normalizeKey(key)
+
+    if not key then
+        return false, 'Invalid key.'
+    end
+
+    if not VALID_KEYS[key] then
+        return false, ('^3%s^7 is not a supported keyboard input.'):format(key)
+    end
+
+    if Config.Blacklist and Config.Blacklist[key] then
+        return false, ('^3%s^7 is blacklisted.'):format(key)
+    end
+
+    return true
 end
 
 local function normalizeCommand(command)
@@ -32,11 +105,6 @@ local function normalizeCommand(command)
     return command
 end
 
-local function isBlacklisted(key)
-    key = normalizeKey(key)
-    return key and Config.Blacklist and Config.Blacklist[key] == true
-end
-
 local function storageKey(id)
     return PREFIX .. tostring(id)
 end
@@ -46,9 +114,7 @@ local function indexKey()
 end
 
 local function saveIndex()
-    SetResourceKvp(indexKey(), json.encode({
-        nextId = nextId
-    }))
+    SetResourceKvp(indexKey(), json.encode({ nextId = nextId }))
 end
 
 local function saveBind(bind)
@@ -71,9 +137,9 @@ local function executeBoundCommand(bind)
     if not bind or not bind.command then return end
 
     local command = normalizeCommand(bind.command)
-    if not command then return end
-
-    ExecuteCommand(command)
+    if command then
+        ExecuteCommand(command)
+    end
 end
 
 local function registerBind(bind)
@@ -87,7 +153,7 @@ local function registerBind(bind)
         commandName,
         ('PV Bind: %s'):format(bind.command),
         'keyboard',
-        bind.key
+        bind.key:lower()
     )
 
     debugPrint(('registered #%s [%s] -> /%s'):format(
@@ -102,39 +168,40 @@ local function loadBinds()
 
     if indexData then
         local ok, data = pcall(json.decode, indexData)
-
         if ok and type(data) == 'table' then
             nextId = tonumber(data.nextId) or 1
         end
     end
 
-    -- Reconstruct bindings from the local KVP store.
-    -- IDs are bounded by MaxBinds, so this is tiny and only runs once.
-    for id = 1, (Config.MaxBinds or 50) * 2 do
+    local maxScan = math.max((Config.MaxBinds or 50) * 2, nextId)
+
+    for id = 1, maxScan do
         local raw = GetResourceKvpString(storageKey(id))
 
         if raw then
             local ok, bind = pcall(json.decode, raw)
 
-            if ok and type(bind) == 'table'
-                and bind.id
-                and bind.key
-                and bind.command then
-
+            if ok and type(bind) == 'table' then
                 bind.id = tonumber(bind.id)
                 bind.key = normalizeKey(bind.key)
                 bind.command = normalizeCommand(bind.command)
 
-                if bind.id and bind.key and bind.command then
+                local valid = bind.id and bind.key and bind.command
+                local keyOk = valid and isValidKey(bind.key)
+
+                if valid and keyOk and not usedKeys[bind.key] then
                     binds[bind.id] = bind
                     usedKeys[bind.key] = bind.id
-
                     registerBind(bind)
 
                     if bind.id >= nextId then
                         nextId = bind.id + 1
                     end
+                elseif not valid or not keyOk then
+                    deleteBindStorage(id)
                 end
+            else
+                deleteBindStorage(id)
             end
         end
     end
@@ -144,17 +211,14 @@ end
 
 local function getBindCount()
     local count = 0
-
     for _ in pairs(binds) do
         count = count + 1
     end
-
     return count
 end
 
 local function findBindByKey(key)
     key = normalizeKey(key)
-
     if not key then return nil end
 
     local id = usedKeys[key]
@@ -169,22 +233,23 @@ local function printSuccess(message)
     print(('^2[pv_keybinder]^7 %s'):format(message))
 end
 
+local function printInfo(message)
+    print(('^3[pv_keybinder]^7 %s'):format(message))
+end
+
 local function createBind(key, command)
     key = normalizeKey(key)
     command = normalizeCommand(command)
 
-    if not key then
-        printError('Invalid key.')
+    local keyOk, keyError = isValidKey(key)
+
+    if not keyOk then
+        printError(keyError)
         return false
     end
 
     if not command then
         printError('Invalid command.')
-        return false
-    end
-
-    if isBlacklisted(key) then
-        printError(('The key ^3%s^7 is blacklisted.'):format(key))
         return false
     end
 
@@ -195,6 +260,7 @@ local function createBind(key, command)
             key,
             existing.command
         ))
+        printInfo('Use /unbind ' .. key .. ' first.')
         return false
     end
 
@@ -220,13 +286,11 @@ local function createBind(key, command)
     registerBind(bind)
 
     printSuccess(('Bound ^3%s^7 -> ^3/%s^7'):format(key, command))
-
     return true
 end
 
 local function removeBind(key)
     key = normalizeKey(key)
-
     local bind = findBindByKey(key)
 
     if not bind then
@@ -268,11 +332,7 @@ local function listBinds()
 
     for i = 1, #rows do
         local bind = rows[i]
-
-        print(('  ^5%s^7 -> ^2/%s^7'):format(
-            bind.key,
-            bind.command
-        ))
+        print(('  ^5%s^7 -> ^2/%s^7'):format(bind.key, bind.command))
     end
 end
 
@@ -281,10 +341,9 @@ RegisterCommand(Config.Command or 'bind', function(_, args)
         print('^3Usage:^7 /bind [key] [command]')
         print('^3Example:^7 /bind F9 e dance')
         print('^3Example:^7 /bind X /e dance')
+        print('^3Use:^7 /binds ^3to list your binds.')
         return
     end
-
-    local key = args[1]
 
     if not args[2] then
         printError('You must specify a command.')
@@ -297,7 +356,7 @@ RegisterCommand(Config.Command or 'bind', function(_, args)
         commandParts[#commandParts + 1] = args[i]
     end
 
-    createBind(key, table.concat(commandParts, ' '))
+    createBind(args[1], table.concat(commandParts, ' '))
 end, false)
 
 RegisterCommand('unbind', function(_, args)
@@ -328,7 +387,6 @@ end)
 
 exports('GetBind', function(key)
     local bind = findBindByKey(key)
-
     if not bind then return nil end
 
     return {
