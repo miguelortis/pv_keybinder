@@ -5,6 +5,40 @@ local binds = {}
 local usedKeys = {}
 local nextId = 1
 local menuOpen = false
+local currentLanguage = nil
+
+local LANG = {
+    es = { invalidKey='La tecla %s no es válida.', unsupportedKey='La tecla %s no es compatible.', blacklistedKey='La tecla %s está prohibida.', invalidCommand='El comando no es válido.', commandRequired='Debes indicar el comando que quieres ejecutar.', alreadyBound='La tecla %s ya está asignada a /%s.', useUnbind='Usa /%s %s primero.', maxBinds='Has alcanzado el máximo de %s binds.', bound='Bind creado: %s → /%s', removed='Bind eliminado: %s → /%s', noBind='No existe ningún bind para %s.', noBinds='No tienes binds configurados.', usageBind='Uso: /%s [tecla] [comando]', example1='Ejemplo: /%s F9 e dance', example2='Ejemplo: /%s X /e dance', usageUnbind='Uso: /%s [tecla]', edited='Bind actualizado: %s → /%s', languageChanged='Idioma cambiado a %s.' },
+    en = { invalidKey='The key %s is not valid.', unsupportedKey='The key %s is not supported.', blacklistedKey='The key %s is blocked.', invalidCommand='The command is not valid.', commandRequired='You must enter a command.', alreadyBound='The key %s is already bound to /%s.', useUnbind='Use /%s %s first.', maxBinds='You have reached the %s bind limit.', bound='Bind created: %s → /%s', removed='Bind removed: %s → /%s', noBind='No bind exists for %s.', noBinds='You have no configured binds.', usageBind='Usage: /%s [key] [command]', example1='Example: /%s F9 e dance', example2='Example: /%s X /e dance', usageUnbind='Usage: /%s [key]', edited='Bind updated: %s → /%s', languageChanged='Language changed to %s.' },
+    pt = { invalidKey='A tecla %s não é válida.', unsupportedKey='A tecla %s não é compatível.', blacklistedKey='A tecla %s está bloqueada.', invalidCommand='O comando não é válido.', commandRequired='Você precisa informar um comando.', alreadyBound='A tecla %s já está vinculada a /%s.', useUnbind='Use /%s %s primeiro.', maxBinds='Você atingiu o limite de %s binds.', bound='Bind criado: %s → /%s', removed='Bind removido: %s → /%s', noBind='Não existe bind para %s.', noBinds='Você não possui binds configurados.', usageBind='Uso: /%s [tecla] [comando]', example1='Exemplo: /%s F9 e dance', example2='Exemplo: /%s X /e dance', usageUnbind='Uso: /%s [tecla]', edited='Bind atualizado: %s → /%s', languageChanged='Idioma alterado para %s.' }
+}
+local LANGUAGE_NAMES = { es='Español', en='English', pt='Português' }
+
+local function detectSystemLanguage()
+    local locale = ''
+    local ok, value = pcall(os.setlocale)
+    if ok and type(value) == 'string' then locale = value:lower() end
+    if locale:find('portugu') or locale:find('brazil') or locale:find('portugal') or locale:find('pt[_%-]') then return 'pt' end
+    if locale:find('spanish') or locale:find('español') or locale:find('spain') or locale:find('mexico') or locale:find('es[_%-]') then return 'es' end
+    if locale:find('english') or locale:find('united states') or locale:find('united kingdom') or locale:find('en[_%-]') then return 'en' end
+    return Config.DefaultLanguage or 'es'
+end
+
+local function resolveLanguage()
+    local configured = Config.Language or 'auto'
+    if configured == 'es' or configured == 'en' or configured == 'pt' then return configured end
+    local saved = GetResourceKvpString(PREFIX .. 'language')
+    if saved == 'es' or saved == 'en' or saved == 'pt' then return saved end
+    return detectSystemLanguage()
+end
+
+local function tr(key, ...)
+    currentLanguage = currentLanguage or resolveLanguage()
+    local pack = LANG[currentLanguage] or LANG[Config.DefaultLanguage or 'es']
+    local value = pack[key] or LANG.es[key] or key
+    return select('#', ...) > 0 and value:format(...) or value
+end
+
 
 local function getBindRows()
     local rows = {}
@@ -90,15 +124,15 @@ local function isValidKey(key)
     key = normalizeKey(key)
 
     if not key then
-        return false, 'Invalid key.'
+        return false, tr('invalidKey', '?')
     end
 
     if not VALID_KEYS[key] then
-        return false, ('^3%s^7 is not a supported keyboard input.'):format(key)
+        return false, tr('unsupportedKey', key)
     end
 
     if Config.Blacklist and Config.Blacklist[key] then
-        return false, ('^3%s^7 is blacklisted.'):format(key)
+        return false, tr('blacklistedKey', key)
     end
 
     return true
@@ -287,12 +321,14 @@ local function openMenu()
     SendNUIMessage({
         action = 'open',
         binds = getBindRows(),
-        maxBinds = Config.MaxBinds or 50
+        maxBinds = Config.MaxBinds or 50,
+        language = currentLanguage or resolveLanguage()
     })
 end
 
 local function closeMenu()
     menuOpen = false
+    currentLanguage = resolveLanguage()
     SetNuiFocus(false, false)
 
     SendNUIMessage({
@@ -332,34 +368,25 @@ local function createBind(key, command)
     end
 
     if not command then
-        notifyError('El comando no es válido.')
+        notifyError(tr('invalidCommand'))
         return false, 'Debes indicar un comando.'
     end
 
     local existing = findBindByKey(key)
 
     if existing then
-        notifyError(('The key ^3%s^7 is already bound to ^3/%s^7.'):format(
-            key,
-            existing.command
-        ))
+        notifyError(tr('alreadyBound', key, existing.command))
 
-        local errorMessage = ('La tecla %s ya está asignada a /%s.'):format(
-            key,
-            existing.command
-        )
+        local errorMessage = tr('alreadyBound', key, existing.command)
 
-        notifyInfo(('Use /%s %s first.'):format(
-            Config.UnbindCommand or 'desbindear',
-            key
-        ))
+        notifyInfo(tr('useUnbind', Config.UnbindCommand or 'desbindear', key))
 
         return false, errorMessage
     end
 
     if getBindCount() >= (Config.MaxBinds or 50) then
-        local errorMessage = ('Has alcanzado el máximo de %s binds.'):format(Config.MaxBinds or 50)
-        notifyError(('Has alcanzado el máximo de %s binds.'):format(Config.MaxBinds or 50))
+        local errorMessage = tr('maxBinds', Config.MaxBinds or 50)
+        notifyError(tr('maxBinds', Config.MaxBinds or 50))
         return false, errorMessage
     end
 
@@ -379,7 +406,7 @@ local function createBind(key, command)
     saveIndex()
     registerBind(bind)
 
-    notifySuccess(('Bound ^3%s^7 -> ^3/%s^7'):format(key, command))
+    notifySuccess(tr('bound', key, command))
     sendMenuData()
 
     return true
@@ -390,7 +417,7 @@ local function removeBind(key)
     local bind = findBindByKey(key)
 
     if not bind then
-        notifyError(('No bind exists for ^3%s^7.'):format(key or '?'))
+        notifyError(tr('noBind', key or '?'))
         return false
     end
 
@@ -403,10 +430,7 @@ local function removeBind(key)
     deleteBindStorage(bind.id)
     saveIndex()
 
-    notifySuccess(('Removed bind ^3%s^7 -> ^3/%s^7'):format(
-        bind.key,
-        bind.command
-    ))
+    notifySuccess(tr('removed', bind.key, bind.command))
 
     sendMenuData()
 
@@ -425,7 +449,7 @@ local function listBinds()
     end)
 
     if #rows == 0 then
-        notifyInfo('No tienes binds configurados.')
+        notifyInfo(tr('noBinds'))
         return
     end
 
@@ -441,23 +465,17 @@ end
 
 local function handleBindCommand(args)
     if not args[1] then
-        notifyInfo(('Uso: /%s [tecla] [comando]'):format(
-            Config.Command or 'bindear'
-        ))
+        notifyInfo(tr('usageBind', Config.Command or 'bindear'))
 
-        notifyInfo(('Ejemplo: /%s F9 e dance'):format(
-            Config.Command or 'bindear'
-        ))
+        notifyInfo(tr('example1', Config.Command or 'bindear'))
 
-        notifyInfo(('Ejemplo: /%s X /e dance'):format(
-            Config.Command or 'bindear'
-        ))
+        notifyInfo(tr('example2', Config.Command or 'bindear'))
 
         return
     end
 
     if not args[2] then
-        notifyError('Debes indicar el comando que quieres ejecutar.')
+        notifyError(tr('commandRequired'))
         return
     end
 
@@ -476,9 +494,7 @@ end, false)
 
 RegisterCommand(Config.UnbindCommand or 'desbindear', function(_, args)
     if not args[1] then
-        notifyInfo(('Uso: /%s [tecla]'):format(
-            Config.UnbindCommand or 'desbindear'
-        ))
+        notifyInfo(tr('usageUnbind', Config.UnbindCommand or 'desbindear'))
 
         return
     end
@@ -640,10 +656,7 @@ RegisterNUICallback('editBind', function(data, cb)
     registerBind(newBind)
     sendMenuData()
 
-    notifySuccess(('Edited bind ^3%s^7 -> ^3/%s^7'):format(
-        newKey,
-        newCommand
-    ))
+    notifySuccess(tr('edited', newKey, newCommand))
 
     cb({
         ok = true,
@@ -652,9 +665,27 @@ RegisterNUICallback('editBind', function(data, cb)
     })
 end)
 
+RegisterNUICallback('setLanguage', function(data, cb)
+    local requested = data and data.language
+    if requested == 'auto' then
+        DeleteResourceKvp(PREFIX .. 'language')
+        currentLanguage = detectSystemLanguage()
+    elseif requested == 'es' or requested == 'en' or requested == 'pt' then
+        SetResourceKvp(PREFIX .. 'language', requested)
+        currentLanguage = requested
+    else
+        cb({ ok = false, error = 'Invalid language.' })
+        return
+    end
+    sendMenuData()
+    notifySuccess(tr('languageChanged', LANGUAGE_NAMES[currentLanguage] or currentLanguage))
+    cb({ ok = true, language = currentLanguage })
+end)
+
 RegisterNUICallback('getConfig', function(_, cb)
     cb({
-        maxBinds = Config.MaxBinds or 50
+        maxBinds = Config.MaxBinds or 50,
+        language = currentLanguage or resolveLanguage()
     })
 end)
 
