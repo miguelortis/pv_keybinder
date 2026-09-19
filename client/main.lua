@@ -322,7 +322,7 @@ local function createBind(key, command)
     end
 
     if not command then
-        notifyError('Invalid command.')
+        notifyError('El comando no es válido.')
         return false, 'Debes indicar un comando.'
     end
 
@@ -349,7 +349,7 @@ local function createBind(key, command)
 
     if getBindCount() >= (Config.MaxBinds or 50) then
         local errorMessage = ('Has alcanzado el máximo de %s binds.'):format(Config.MaxBinds or 50)
-        notifyError(('Maximum of %s binds reached.'):format(Config.MaxBinds or 50))
+        notifyError(('Has alcanzado el máximo de %s binds.'):format(Config.MaxBinds or 50))
         return false, errorMessage
     end
 
@@ -447,7 +447,7 @@ local function handleBindCommand(args)
     end
 
     if not args[2] then
-        notifyError('You must specify a command.')
+        notifyError('Debes indicar el comando que quieres ejecutar.')
         return
     end
 
@@ -466,7 +466,7 @@ end, false)
 
 RegisterCommand(Config.UnbindCommand or 'desbindear', function(_, args)
     if not args[1] then
-        print(('^3Usage:^7 /%s [key]'):format(
+        notifyInfo(('Uso: /%s [tecla]'):format(
             Config.UnbindCommand or 'desbindear'
         ))
 
