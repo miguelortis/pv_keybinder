@@ -61,9 +61,7 @@ The default configuration blocks movement and several core/system keys.
 
 A key can only have one pv_keybinder entry.
 
-When a bind is removed with `/desbindear`, the resource also clears the active FiveM keyboard mapping. This is necessary because `RegisterKeyMapping` does not provide a resource-side unregister function; deleting the Lua entry alone would leave the physical key mapping active. FiveM exposes `unbind <mapper> <input>` for removing the active mapping. citeturn0search3turn0search9
-
-Because FiveM's `unbind` command operates on the physical input, a `/desbindear` operation should only be used for a key managed by pv_keybinder.
+When a bind is removed with `/desbindear`, the resource removes it from its active bind table and local KVP. FiveM does not expose a resource-side unregister function for `RegisterKeyMapping`, so the old mapping remains registered but its callback is made inert immediately. Pressing the old key therefore does nothing and does not execute the removed command.
 
     /bindear F9 e dance
     /bindear F9 e wave
