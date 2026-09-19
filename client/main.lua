@@ -4,6 +4,29 @@ local PREFIX = Config.StoragePrefix or 'pv_keybinder:'
 local binds = {}
 local usedKeys = {}
 local nextId = 1
+local menuOpen = false
+
+local function getBindRows()
+    local rows = {}
+
+    for _, bind in pairs(binds) do
+        rows[#rows + 1] = {
+            id = bind.id,
+            key = bind.key,
+            command = bind.command
+        }
+    end
+
+    table.sort(rows, function(a, b)
+        if a.key == b.key then
+            return a.id < b.id
+        end
+
+        return a.key < b.key
+    end)
+
+    return rows
+end
 
 local VALID_KEYS = {
     BACK = true, TAB = true, RETURN = true, PAUSE = true, CAPITAL = true,
@@ -239,6 +262,46 @@ local function printInfo(message)
     print(('^3[pv_keybinder]^7 %s'):format(message))
 end
 
+local function openMenu()
+    menuOpen = true
+    SetNuiFocus(true, true)
+
+    SendNUIMessage({
+        action = 'open',
+        binds = getBindRows(),
+        maxBinds = Config.MaxBinds or 50
+    })
+end
+
+local function closeMenu()
+    menuOpen = false
+    SetNuiFocus(false, false)
+
+    SendNUIMessage({
+        action = 'close'
+    })
+end
+
+local function sendMenuData()
+    if not menuOpen then return end
+
+    SendNUIMessage({
+        action = 'refresh',
+        binds = getBindRows(),
+        maxBinds = Config.MaxBinds or 50
+    })
+end
+
+local function notifyMenu(kind, message)
+    if not menuOpen then return end
+
+    SendNUIMessage({
+        action = 'notify',
+        kind = kind,
+        message = message
+    })
+end
+
 local function createBind(key, command)
     key = normalizeKey(key)
     command = normalizeCommand(command)
@@ -293,6 +356,7 @@ local function createBind(key, command)
     registerBind(bind)
 
     printSuccess(('Bound ^3%s^7 -> ^3/%s^7'):format(key, command))
+    sendMenuData()
 
     return true
 end
@@ -319,6 +383,8 @@ local function removeBind(key)
         bind.key,
         bind.command
     ))
+
+    sendMenuData()
 
     return true
 end
@@ -401,6 +467,175 @@ end, false)
 RegisterCommand(Config.ListCommand or 'binds', function()
     listBinds()
 end, false)
+
+RegisterCommand(Config.MenuCommand or 'bindmenu', function()
+    if menuOpen then
+        closeMenu()
+    else
+        openMenu()
+    end
+end, false)
+
+RegisterKeyMapping(
+    'pvkb_openmenu',
+    'PV Keybinder: Open Menu',
+    'keyboard',
+    Config.MenuKey or ''
+)
+
+RegisterNUICallback('close', function(_, cb)
+    closeMenu()
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('getBinds', function(_, cb)
+    cb({
+        binds = getBindRows(),
+        maxBinds = Config.MaxBinds or 50
+    })
+end)
+
+RegisterNUICallback('createBind', function(data, cb)
+    local key = data and data.key
+    local command = data and data.command
+
+    local beforeCount = getBindCount()
+    local success = createBind(key, command)
+
+    if success then
+        cb({
+            ok = true,
+            binds = getBindRows(),
+            maxBinds = Config.MaxBinds or 50
+        })
+        return
+    end
+
+    cb({
+        ok = false,
+        binds = getBindRows(),
+        maxBinds = Config.MaxBinds or 50,
+        error = ('No se pudo crear el bind. Revisa la consola para el motivo.'),
+        count = beforeCount
+    })
+end)
+
+RegisterNUICallback('deleteBind', function(data, cb)
+    local id = tonumber(data and data.id)
+
+    if not id or not binds[id] then
+        cb({
+            ok = false,
+            binds = getBindRows(),
+            error = 'Ese bind ya no existe.'
+        })
+        return
+    end
+
+    local bind = binds[id]
+    local success = removeBind(bind.key)
+
+    cb({
+        ok = success,
+        binds = getBindRows(),
+        maxBinds = Config.MaxBinds or 50,
+        error = success and nil or 'No se pudo eliminar el bind.'
+    })
+end)
+
+RegisterNUICallback('editBind', function(data, cb)
+    local id = tonumber(data and data.id)
+    local bind = id and binds[id] or nil
+
+    if not bind then
+        cb({
+            ok = false,
+            binds = getBindRows(),
+            error = 'Ese bind ya no existe.'
+        })
+        return
+    end
+
+    local newKey = normalizeKey(data.key)
+    local newCommand = normalizeCommand(data.command)
+
+    local keyOk, keyError = isValidKey(newKey)
+
+    if not keyOk then
+        cb({
+            ok = false,
+            binds = getBindRows(),
+            error = keyError
+        })
+        return
+    end
+
+    if not newCommand then
+        cb({
+            ok = false,
+            binds = getBindRows(),
+            error = 'Debes indicar un comando.'
+        })
+        return
+    end
+
+    local other = findBindByKey(newKey)
+
+    if other and other.id ~= id then
+        cb({
+            ok = false,
+            binds = getBindRows(),
+            error = ('La tecla %s ya está asignada.'):format(newKey)
+        })
+        return
+    end
+
+    -- RegisterKeyMapping has no unregister API. Recreate this bind with a
+    -- new command identifier so a changed key gets its own mapping.
+    binds[id] = nil
+    usedKeys[bind.key] = nil
+    deleteBindStorage(id)
+
+    local newId = nextId
+    nextId = nextId + 1
+
+    local newBind = {
+        id = newId,
+        key = newKey,
+        command = newCommand
+    }
+
+    binds[newId] = newBind
+    usedKeys[newKey] = newId
+
+    saveBind(newBind)
+    saveIndex()
+    registerBind(newBind)
+    sendMenuData()
+
+    printSuccess(('Edited bind ^3%s^7 -> ^3/%s^7'):format(
+        newKey,
+        newCommand
+    ))
+
+    cb({
+        ok = true,
+        binds = getBindRows(),
+        maxBinds = Config.MaxBinds or 50
+    })
+end)
+
+RegisterNUICallback('getConfig', function(_, cb)
+    cb({
+        maxBinds = Config.MaxBinds or 50
+    })
+end)
+
+AddEventHandler('onClientResourceStop', function(resourceName)
+    if resourceName == RESOURCE then
+        SetNuiFocus(false, false)
+    end
+end)
 
 exports('GetBinds', function()
     local result = {}
