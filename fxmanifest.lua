@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'PV Development'
 description 'Persistent, framework-agnostic key bindings for FiveM'
-version '1.1.1'
+version '1.1.2'
 
 lua54 'yes'
 
