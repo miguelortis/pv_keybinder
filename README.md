@@ -24,6 +24,31 @@ Remove a bind:
 
 `/bindear` and `/desbindear` are normal resource commands registered with FiveM's `RegisterCommand`, so they are not dependent on the reserved native `bind` command. FiveM documents `RegisterCommand` as the standard way to create player commands. citeturn0search0
 
+## Menu visual
+
+pv_keybinder incluye una interfaz NUI para administrar los binds sin escribir comandos.
+
+Abrir el menú:
+
+    /bindmenu
+
+También existe un key mapping propio llamado **PV Keybinder: Open Menu**. Su valor por defecto está vacío para que cada jugador pueda elegir la tecla que quiera desde:
+
+    Settings > Key Bindings > FiveM
+
+La interfaz permite:
+
+- Ver todos los binds del jugador.
+- Buscar por tecla o comando.
+- Agregar un bind.
+- Capturar la tecla directamente con el teclado.
+- Validar las teclas bloqueadas.
+- Editar tecla y comando.
+- Eliminar binds.
+- Mostrar el límite de binds.
+
+La interfaz usa FiveM NUI, `SetNuiFocus`, `SendNUIMessage` y callbacks NUI. citeturn3search1turn3search0
+
 ## Key validation
 
 The resource validates keyboard inputs before creating a mapping.
@@ -100,6 +125,8 @@ The resource uses `RegisterCommand` and `RegisterKeyMapping`, plus one startup K
     Config.Command = 'bindear'
     Config.UnbindCommand = 'desbindear'
     Config.ListCommand = 'binds'
+    Config.MenuCommand = 'bindmenu'
+    Config.MenuKey = ''
     Config.MaxBinds = 50
     Config.Blacklist = { ... }
 
