@@ -15,7 +15,15 @@
                     <h1>Keybinder</h1>
                     <p>Administra tus teclas y comandos locales.</p>
                 </div>
-                <button id="closeBtn" class="icon-btn" aria-label="Cerrar">×</button>
+                <div class="topbar-actions">
+                    <select id="languageSelect" class="language-select" aria-label="Idioma">
+                        <option value="auto">Auto</option>
+                        <option value="es">Español</option>
+                        <option value="en">English</option>
+                        <option value="pt">Português</option>
+                    </select>
+                    <button id="closeBtn" class="icon-btn" aria-label="Cerrar">×</button>
+                </div>
             </header>
             <div id="notice" class="notice hidden"></div>
             <div class="toolbar">
