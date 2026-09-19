@@ -1,11 +1,15 @@
 Config = {
-    Command = 'bind',
+    -- FiveM reserves the native "bind" command in production.
+    -- The chat hook lets pv_keybinder still accept /bind from chat.
+    Command = 'pvbind',
+
+    ChatHook = true,
+
     StoragePrefix = 'pv_keybinder:bind:',
     Debug = false,
 
     MaxBinds = 50,
 
-    -- FiveM keyboard inputs that players are not allowed to use.
     Blacklist = {
         W = true,
         A = true,
@@ -28,9 +32,8 @@ Config = {
 
         TAB = true,
         ESCAPE = true,
-        CAPSLOCK = true,
+        CAPITAL = true,
 
-        -- Reserve common FiveM / server keys.
         F1 = true,
         F2 = true,
         F3 = true,
@@ -39,9 +42,6 @@ Config = {
         F6 = true,
         F7 = true,
         F8 = true,
-        F10 = true,
-        F11 = true,
-        F12 = true,
 
         LWIN = true,
         RWIN = true,
