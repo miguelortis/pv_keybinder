@@ -29,17 +29,9 @@ local VALID_KEYS = {
     APOSTROPHE = true, OEM_7 = true, OEM_102 = true
 }
 
-for i = 0, 9 do
-    VALID_KEYS[tostring(i)] = true
-end
-
-for i = string.byte('A'), string.byte('Z') do
-    VALID_KEYS[string.char(i)] = true
-end
-
-for i = 1, 24 do
-    VALID_KEYS['F' .. i] = true
-end
+for i = 0, 9 do VALID_KEYS[tostring(i)] = true end
+for i = string.byte('A'), string.byte('Z') do VALID_KEYS[string.char(i)] = true end
+for i = 1, 24 do VALID_KEYS['F' .. i] = true end
 
 local KEY_ALIASES = {
     ESC = 'ESCAPE',
@@ -63,11 +55,8 @@ end
 
 local function normalizeKey(key)
     if type(key) ~= 'string' then return nil end
-
     key = key:upper():gsub('^%s+', ''):gsub('%s+$', '')
-
     if key == '' then return nil end
-
     return KEY_ALIASES[key] or key
 end
 
@@ -91,12 +80,9 @@ end
 
 local function normalizeCommand(command)
     if type(command) ~= 'string' then return nil end
-
     command = command:gsub('^%s+', ''):gsub('%s+$', '')
     command = command:gsub('^/', '')
-
     if command == '' then return nil end
-
     return command
 end
 
@@ -164,7 +150,6 @@ local function loadBinds()
 
     if indexData then
         local ok, data = pcall(json.decode, indexData)
-
         if ok and type(data) == 'table' then
             nextId = tonumber(data.nextId) or 1
         end
@@ -208,21 +193,15 @@ end
 
 local function getBindCount()
     local count = 0
-
-    for _ in pairs(binds) do
-        count = count + 1
-    end
-
+    for _ in pairs(binds) do count = count + 1 end
     return count
 end
 
 local function findBindByKey(key)
     key = normalizeKey(key)
-
     if not key then return nil end
 
     local id = usedKeys[key]
-
     return id and binds[id] or nil
 end
 
@@ -258,8 +237,7 @@ local function createBind(key, command)
 
     if existing then
         printError(('The key ^3%s^7 is already bound to ^3/%s^7.'):format(
-            key,
-            existing.command
+            key, existing.command
         ))
         printInfo('Use /unbind ' .. key .. ' first.')
         return false
@@ -287,13 +265,11 @@ local function createBind(key, command)
     registerBind(bind)
 
     printSuccess(('Bound ^3%s^7 -> ^3/%s^7'):format(key, command))
-
     return true
 end
 
 local function removeBind(key)
     key = normalizeKey(key)
-
     local bind = findBindByKey(key)
 
     if not bind then
@@ -308,8 +284,7 @@ local function removeBind(key)
     saveIndex()
 
     printSuccess(('Removed bind ^3%s^7 -> ^3/%s^7'):format(
-        bind.key,
-        bind.command
+        bind.key, bind.command
     ))
 
     return true
@@ -335,11 +310,7 @@ local function listBinds()
 
     for i = 1, #rows do
         local bind = rows[i]
-
-        print(('  ^5%s^7 -> ^2/%s^7'):format(
-            bind.key,
-            bind.command
-        ))
+        print(('  ^5%s^7 -> ^2/%s^7'):format(bind.key, bind.command))
     end
 end
 
@@ -348,7 +319,6 @@ local function handleBindCommand(args)
         print('^3Usage:^7 /bind [key] [command]')
         print('^3Example:^7 /bind F9 e dance')
         print('^3Example:^7 /bind X /e dance')
-        print('^3Use:^7 /binds ^3to list your binds.')
         return
     end
 
@@ -366,7 +336,6 @@ local function handleBindCommand(args)
     createBind(args[1], table.concat(commandParts, ' '))
 end
 
--- Fallback command. /bind itself is reserved by FiveM in production.
 RegisterCommand(Config.Command or 'pvbind', function(_, args)
     handleBindCommand(args)
 end, false)
@@ -384,17 +353,39 @@ RegisterCommand('binds', function()
     listBinds()
 end, false)
 
--- Exact /bind support when the standard FiveM chat resource is present.
 RegisterNetEvent('pv_keybinder:chatCommand', function(command, args)
     if command == 'bind' then
         handleBindCommand(args or {})
     elseif command == 'unbind' then
-        if not args or not args[1] then
-            print('^3Usage:^7 /unbind [key]')
-            return
+        if args and args[1] then
+            removeBind(args[1])
         end
+    elseif command == 'binds' then
+        listBinds()
+    end
+end)
 
-        removeBind(args[1])
+-- Used by the optional patch in patches/chat_cl_chat_bind.lua.txt.
+-- This event is local to the client and avoids the reserved native command.
+RegisterNetEvent('pv_keybinder:chatInput', function(commandLine)
+    local args = {}
+
+    for value in string.gmatch(commandLine or '', '%S+') do
+        args[#args + 1] = value
+    end
+
+    local command = table.remove(args, 1)
+
+    if not command then return end
+
+    command = command:lower()
+
+    if command == 'bind' then
+        handleBindCommand(args)
+    elseif command == 'unbind' then
+        if args[1] then
+            removeBind(args[1])
+        end
     elseif command == 'binds' then
         listBinds()
     end
@@ -415,7 +406,6 @@ end)
 
 exports('GetBind', function(key)
     local bind = findBindByKey(key)
-
     if not bind then return nil end
 
     return {
