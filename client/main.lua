@@ -15,12 +15,27 @@ local LANG = {
 local LANGUAGE_NAMES = { es='Español', en='English', pt='Português' }
 
 local function detectSystemLanguage()
-    local locale = ''
-    local ok, value = pcall(os.setlocale)
-    if ok and type(value) == 'string' then locale = value:lower() end
-    if locale:find('portugu') or locale:find('brazil') or locale:find('portugal') or locale:find('pt[_%-]') then return 'pt' end
-    if locale:find('spanish') or locale:find('español') or locale:find('spain') or locale:find('mexico') or locale:find('es[_%-]') then return 'es' end
-    if locale:find('english') or locale:find('united states') or locale:find('united kingdom') or locale:find('en[_%-]') then return 'en' end
+    -- FiveM/CfxLua does not expose the standard Lua 'os' library on the
+    -- client the way desktop Lua does, so do not use os.setlocale here.
+    -- GTA V exposes the player's current language through GetCurrentLanguage.
+    local ok, languageId = pcall(GetCurrentLanguage)
+
+    if ok and type(languageId) == 'number' then
+        -- GTA V language IDs:
+        -- 0 English, 4 Spanish, 5 Brazilian Portuguese, 11 Mexican Spanish.
+        if languageId == 4 or languageId == 11 then
+            return 'es'
+        end
+
+        if languageId == 5 then
+            return 'pt'
+        end
+
+        if languageId == 0 then
+            return 'en'
+        end
+    end
+
     return Config.DefaultLanguage or 'es'
 end
 
